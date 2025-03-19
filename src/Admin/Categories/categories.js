@@ -1,54 +1,85 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Modal, Button, Form, Table } from "react-bootstrap";
 import { FaPlus, FaEdit, FaTrash } from "react-icons/fa";
+import axios from "axios";
+
+const FIREBASE_BASE_URL =
+  "https://restaraunt-admin-default-rtdb.firebaseio.com/categories";
 
 const Categories = () => {
   const [show, setShow] = useState(false);
   const [categoryName, setCategoryName] = useState("");
   const [categoryUrl, setCategoryUrl] = useState("");
   const [categories, setCategories] = useState([]);
-  const [editIndex, setEditIndex] = useState(null); // Track edit mode
+  const [editId, setEditId] = useState(null);
 
-  // Open & Close Modal
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await axios.get(`${FIREBASE_BASE_URL}.json`);
+        if (response.data) {
+          const formattedData = Object.keys(response.data).map((key) => ({
+            id: key,
+            name: response.data[key].name,
+            url: response.data[key].url,
+          }));
+          setCategories(formattedData);
+        }
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+      }
+    };
+    fetchCategories();
+  }, []);
+
   const handleClose = () => {
     setShow(false);
     setCategoryName("");
     setCategoryUrl("");
-    setEditIndex(null); // Reset edit index when closing modal
+    setEditId(null);
   };
   const handleShow = () => setShow(true);
 
-  // Handle Form Submission (Add/Edit Category)
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (categoryName.trim() && categoryUrl.trim()) {
-      if (editIndex !== null) {
-        // Editing an existing category
-        const updatedCategories = [...categories];
-        updatedCategories[editIndex] = { name: categoryName, url: categoryUrl };
-        setCategories(updatedCategories);
+    if (!categoryName.trim() || !categoryUrl.trim()) return;
+
+    try {
+      if (editId) {
+        await axios.patch(`${FIREBASE_BASE_URL}/${editId}.json`, {
+          name: categoryName,
+          url: categoryUrl,
+        });
       } else {
-        // Adding a new category
-        setCategories([
-          ...categories,
-          { name: categoryName, url: categoryUrl },
-        ]);
+        await axios.post(`${FIREBASE_BASE_URL}.json`, {
+          name: categoryName,
+          url: categoryUrl,
+        });
       }
-      handleClose();
+      window.location.reload();
+    } catch (error) {
+      console.error("Error saving category:", error);
+    }
+    handleClose();
+  };
+
+  const handleEdit = (id) => {
+    const category = categories.find((cat) => cat.id === id);
+    if (category) {
+      setEditId(id);
+      setCategoryName(category.name);
+      setCategoryUrl(category.url);
+      handleShow();
     }
   };
 
-  // Handle Edit Click
-  const handleEdit = (index) => {
-    setEditIndex(index);
-    setCategoryName(categories[index].name);
-    setCategoryUrl(categories[index].url);
-    handleShow();
-  };
-
-  // Handle Delete Click
-  const handleDelete = (index) => {
-    setCategories(categories.filter((_, i) => i !== index));
+  const handleDelete = async (id) => {
+    try {
+      await axios.delete(`${FIREBASE_BASE_URL}/${id}.json`);
+      window.location.reload();
+    } catch (error) {
+      console.error("Error deleting category:", error);
+    }
   };
 
   return (
@@ -59,8 +90,6 @@ const Categories = () => {
           <FaPlus className="me-2" /> Add Category
         </Button>
       </div>
-
-      {/* Category Table */}
       <Table striped bordered hover>
         <thead>
           <tr>
@@ -73,7 +102,7 @@ const Categories = () => {
         <tbody>
           {categories.length > 0 ? (
             categories.map((cat, index) => (
-              <tr key={index}>
+              <tr key={cat.id}>
                 <td>{index + 1}</td>
                 <td>{cat.name}</td>
                 <td>{cat.url}</td>
@@ -82,14 +111,14 @@ const Categories = () => {
                     variant="warning"
                     size="sm"
                     className="me-2"
-                    onClick={() => handleEdit(index)}
+                    onClick={() => handleEdit(cat.id)}
                   >
                     <FaEdit />
                   </Button>
                   <Button
                     variant="danger"
                     size="sm"
-                    onClick={() => handleDelete(index)}
+                    onClick={() => handleDelete(cat.id)}
                   >
                     <FaTrash />
                   </Button>
@@ -105,13 +134,9 @@ const Categories = () => {
           )}
         </tbody>
       </Table>
-
-      {/* Bootstrap Modal */}
       <Modal show={show} onHide={handleClose} centered>
         <Modal.Header closeButton>
-          <Modal.Title>
-            {editIndex !== null ? "Edit" : "Add"} Category
-          </Modal.Title>
+          <Modal.Title>{editId ? "Edit" : "Add"} Category</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <Form onSubmit={handleSubmit}>
@@ -125,7 +150,6 @@ const Categories = () => {
                 required
               />
             </Form.Group>
-
             <Form.Group className="mb-3">
               <Form.Label>Category URL</Form.Label>
               <Form.Control
@@ -136,9 +160,8 @@ const Categories = () => {
                 required
               />
             </Form.Group>
-
             <Button variant="primary" type="submit" className="w-100">
-              {editIndex !== null ? "Update" : "Save"} Category
+              {editId ? "Update" : "Save"} Category
             </Button>
           </Form>
         </Modal.Body>

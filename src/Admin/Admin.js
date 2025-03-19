@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Routes, Route, Link, useLocation } from "react-router-dom";
+import { Routes, Route, Link, Outlet, useLocation } from "react-router-dom";
 import { Nav } from "react-bootstrap";
 import "bootstrap/dist/css/bootstrap.min.css";
 import {
@@ -22,10 +22,10 @@ const AdminPanel = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   const menuItems = [
-    { path: "/admin/categories", label: "Categories", icon: FaFolder },
-    { path: "/admin/subcategories", label: "Subcategories", icon: FaTags },
-    { path: "/admin/products", label: "Products", icon: FaBox },
-    { path: "/admin/offers", label: "Offers", icon: FaGift },
+    { path: "categories", label: "Categories", icon: FaFolder },
+    { path: "subcategories", label: "Subcategories", icon: FaTags },
+    { path: "products", label: "Products", icon: FaBox },
+    { path: "offers", label: "Offers", icon: FaGift },
   ];
 
   return (
@@ -60,9 +60,9 @@ const AdminPanel = () => {
             <Link
               key={path}
               className={`nav-link text-white d-flex align-items-center p-2 rounded ${
-                location.pathname === path ? "bg-primary" : ""
+                location.pathname.includes(`/admin/${path}`) ? "bg-primary" : ""
               }`}
-              to={path}
+              to={`/admin/${path}`}
               onClick={() => setIsSidebarOpen(false)} // Auto-close in collapsed mode
             >
               <Icon className="me-2" /> {isSidebarOpen && label}
@@ -71,21 +71,15 @@ const AdminPanel = () => {
         </Nav>
       </div>
 
-      {/* Main Content - Ensure content is cleared when navigating */}
+      {/* Main Content - Ensure Outlet is used for nested routes */}
       <div
-        key={location.pathname} // Forces React to re-render the component
         className="flex-grow-1 p-4"
         style={{
           marginLeft: isSidebarOpen ? "250px" : "80px",
           transition: "margin-left 0.3s ease",
         }}
       >
-        <Routes>
-          <Route path="/admin/categories" element={<Categories />} />
-          <Route path="/admin/subcategories" element={<Subcategories />} />
-          <Route path="/admin/products" element={<Products />} />
-          <Route path="/admin/offers" element={<Offers />} />
-        </Routes>
+        <Outlet />
       </div>
     </div>
   );

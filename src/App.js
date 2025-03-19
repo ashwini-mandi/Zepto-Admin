@@ -1,15 +1,15 @@
-import React from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import AdminPanel from "./Admin/Admin";
+import "./App.css";
+// import AdminPanel from "./Admin/Admin";
+import "bootstrap/dist/css/bootstrap.min.css";
+import User from "./LogIn/enter";
 
-const App = () => {
+function App() {
   return (
-    <Router>
-      <Routes>
-        <Route path="/*" element={<AdminPanel />} />
-      </Routes>
-    </Router>
+    <div className="App">
+      {/* <AdminPanel /> */}
+      <User />
+    </div>
   );
-};
+}
 
 export default App;
